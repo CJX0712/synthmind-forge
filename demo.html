@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SynthMind-Forge · RCG-NAS 交互演示</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c2330; --line:#2a3240;
+    --txt:#e6edf3; --mut:#8b949e; --acc:#51cf66; --acc2:#4dabf7; --warn:#ffd43b;
+    --ok:#51cf66; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:22px 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161d,#0e1117)}
+  header h1{margin:0;font-size:20px;letter-spacing:.3px}
+  header h1 .tag{color:var(--acc)}
+  header p{margin:6px 0 0;color:var(--mut);font-size:13px}
+  .wrap{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px 26px;align-items:start}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h2{margin:0 0 12px;font-size:14px;color:var(--acc2);text-transform:uppercase;letter-spacing:.5px}
+  label{display:block;margin:10px 0 4px;color:var(--mut);font-size:12px}
+  input[type=range]{width:100%}
+  .row{display:flex;justify-content:space-between;font-size:12px;color:var(--txt)}
+  button{margin-top:14px;width:100%;padding:10px;border:0;border-radius:9px;background:var(--acc);color:#08130b;font-weight:700;cursor:pointer;font-size:14px}
+  button:hover{filter:brightness(1.08)}
+  button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line);font-weight:500}
+  .pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .node{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;position:relative}
+  .node.active{border-color:var(--acc);box-shadow:0 0 0 2px rgba(81,207,102,.25)}
+  .arrow{color:var(--mut)}
+  canvas{width:100%;height:200px;background:var(--panel2);border-radius:8px;border:1px solid var(--line)}
+  pre{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;color:#cdd9e5;max-height:220px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-weight:600}
+  .pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;border:1px solid var(--line)}
+  .ok{color:var(--ok);border-color:rgba(81,207,102,.4)}
+  .warn{color:var(--warn);border-color:rgba(255,212,59,.4)}
+  .oss{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .oss span{font-size:11px;background:var(--panel2);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+  footer{padding:14px 26px;border-top:1px solid var(--line);color:var(--mut);font-size:12px}
+  code{background:var(--panel2);padding:1px 5px;border-radius:5px;color:#cdd9e5}
+</style>
+</head>
+<body>
+<header>
+  <h1>SynthMind-Forge · <span class="tag">RCG-NAS</span> 交互演示</h1>
+  <p>递归批判引导的神经网络架构搜索 · 作者 <b>晨星 (CJX0712)</b> · MIT License · 纯前端复刻同一套闭环逻辑</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>控制面板</h2>
+    <label>参数预算 budget <span class="row"><span id="budgetV">40000</span></span></label>
+    <input id="budget" type="range" min="8000" max="120000" step="2000" value="40000" oninput="document.getElementById('budgetV').textContent=this.value">
+    <label>搜索代数 iters <span class="row"><span id="itersV">6</span></span></label>
+    <input id="iters" type="range" min="3" max="12" step="1" value="6" oninput="document.getElementById('itersV').textContent=this.value">
+    <label>种群规模 pop <span class="row"><span id="popV">4</span></span></label>
+    <input id="pop" type="range" min="2" max="8" step="1" value="4" oninput="document.getElementById('popV').textContent=this.value">
+    <label>目标精度 target <span class="row"><span id="targetV">0.90</span></span></label>
+    <input id="target" type="range" min="0.5" max="0.99" step="0.01" value="0.90" oninput="document.getElementById('targetV').textContent=(+this.value).toFixed(2)">
+    <label>随机种子 seed</label>
+    <input id="seed" type="number" value="1790362095" style="width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:7px">
+    <button onclick="runSearch()">▶ 运行搜索</button>
+    <button class="sec" onclick="location.reload()">重置</button>
+    <div class="oss">
+      <span>LangGraph · 编排</span><span>Haystack · 记忆</span>
+      <span>ONNX Runtime · 压测</span><span>Diffusers · 先验</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="card">
+      <h2>状态机流水线 (LangGraph 式)</h2>
+      <div class="pipe" id="pipe">
+        <div class="node" data-n="planner">Planner</div><span class="arrow">→</span>
+        <div class="node" data-n="evaluator">Evaluator</div><span class="arrow">→</span>
+        <div class="node" data-n="critic">Critic</div><span class="arrow">→</span>
+        <div class="node" data-n="refiner">Refiner</div><span class="arrow">↺</span>
+        <div class="node" data-n="synthesizer">Synthesizer</div>
+      </div>
+      <div style="margin-top:12px"><canvas id="chart" width="640" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>最佳架构 (gen <span id="bestGen">-</span>)</h2>
+      <pre id="bestArch">点击「运行搜索」生成…</pre>
+    </div>
+    <div class="card">
+      <h2>演进追踪</h2>
+      <table><thead><tr><th>代</th><th>候选</th><th>精度</th><th>参数量</th><th>批判</th></tr></thead>
+      <tbody id="trace"><tr><td colspan="5" style="color:var(--mut)">— 暂无数据 —</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  代理精度为容量/正则/激活的平滑函数（占位，非真实训练精度）；接 torch 训练后端即可换真值。
+  后端接入与可复现随机抽签详见仓库 <code>ARCHITECTURE.md</code> / <code>RANDOM_SEED.md</code>。
+</footer>
+
+<script>
+// ---- seedable RNG ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const ACTS=["relu","gelu","tanh","silu"];
+function countParams(a){let t=0,inw=a.stem_width;for(const b of a.blocks){if(b.kind==="linear"){t+=inw*b.width+b.width;inw=b.width}else if(b.kind==="conv"){t+=b.in_channels*b.out_channels*b.kernel*b.kernel+b.out_channels;inw=b.out_channels}}t+=inw*a.head_width+a.head_width;return t}
+function randArch(rng,name,maxB=4){const d=1+Math.floor(rng()*maxB);const blocks=[];for(let i=0;i<d;i++){if(rng()<0.25)blocks.push({kind:"dropout",p:+(0.05+rng()*0.35).toFixed(2)});else blocks.push({kind:"linear",width:[16,32,48,64,96,128][Math.floor(rng()*6)],act:ACTS[Math.floor(rng()*4)]})});return{name,stem_width:[8,16,32][Math.floor(rng()*3)],blocks,head_width:[4,8,10,16][Math.floor(rng()*4)]}}
+function proxyAcc(a,budget){const p=countParams(a);let cap=0.5+0.5*Math.tanh((Math.log(p+1)-Math.log(budget))*0.8);const of=Math.max(0,(p-budget*2)/(budget*4))*0.15;cap=Math.max(0,Math.min(1,cap-of));let reg=0,act=0;for(const b of a.blocks)if(b.kind==="dropout")reg+=0.06*(b.p/0.2);for(const b of a.blocks)if(b.act==="relu"||b.act==="gelu")act=Math.max(act,0.04);const depth=a.blocks.filter(b=>b.kind==="linear").length;const dp=0.02*Math.max(0,depth-3);return Math.max(0,Math.min(1,cap+reg+act-dp))}
+function evaluate(a,budget){const p=countParams(a);return{name:a.name,params:p,accuracy:+proxyAcc(a,budget).toFixed(4),latency_ms:+(p/1000).toFixed(3),under_budget:p<=budget}}
+function feat(a){const w=a.blocks.filter(b=>b.kind==="linear").map(b=>b.width);return[a.stem_width/32,a.blocks.length/4,a.blocks.some(b=>b.kind==="dropout")?1:0,(w.length?w.reduce((x,y)=>x+y)/w.length:0)/128,a.head_width/16]}
+function cos(x,y){const d=x.map((v,i)=>v*y[i]).reduce((s,v)=>s+v,0);const nx=Math.sqrt(x.reduce((s,v)=>s+v*v,0))||1e-9;const ny=Math.sqrt(y.reduce((s,v)=>s+v*v,0))||1e-9;return d/(nx*ny)}
+function critique(a,ev,mem){const act=[];const notes=[];const hasDrop=a.blocks.some(b=>b.kind==="dropout");if(!ev.under_budget){act.push({op:"shrink_width",by:0.6});notes.push("超预算，收窄宽度")}else if(ev.accuracy<0.55&&ev.params<15000){act.push({op:"widen",to:96});notes.push("容量不足，加宽")}if(ev.accuracy<0.7&&!hasDrop){act.push({op:"add_dropout",p:0.2});notes.push("缺 dropout，加正则")}for(const b of a.blocks)if(b.act==="tanh"){act.push({op:"switch_act",from:"tanh",to:"relu"});notes.push("tanh 易饱和→relu")}for(const r of mem)if(r.score<0.5&&r.text.includes("dropout")&&!hasDrop){act.push({op:"add_dropout",p:0.25});notes.push("记忆：曾失败")}if(!act.length){act.push({op:"keep"});notes.push("满足约束")}return{act,note:notes.join("；")||"无显著问题"}}
+function refine(a,acts,rng){const n=JSON.parse(JSON.stringify(a));for(const x of acts){if(x.op==="shrink_width"){const f=x.by;n.blocks.forEach(b=>{if(b.kind==="linear")b.width=Math.max(8,Math.floor(b.width*f))});n.stem_width=Math.max(4,Math.floor(n.stem_width*f))}else if(x.op==="widen"){for(const b of n.blocks){if(b.kind==="linear"){b.width=x.to;break}}}else if(x.op==="add_dropout"){let ins=false;for(let i=0;i<n.blocks.length;i++){if(n.blocks[i].kind==="linear"){n.blocks.splice(i+1,0,{kind:"dropout",p:x.p});ins=true;break}}if(!ins)n.blocks.push({kind:"dropout",p:x.p})}else if(x.op==="switch_act"){n.blocks.forEach(b=>{if(b.act===x.from)b.act=x.to})};}n.name=a.name+"_r";return n}
+
+const mem=[];
+function setActive(n){document.querySelectorAll('#pipe .node').forEach(e=>e.classList.toggle('active',e.dataset.n===n))}
+function drawChart(series){const c=document.getElementById('chart');const ctx=c.getContext('2d');const W=c.width,H=c.height;ctx.clearRect(0,0,W,H);ctx.strokeStyle='#2a3240';ctx.beginPath();ctx.moveTo(40,10);ctx.lineTo(40,H-20);ctx.lineTo(W-10,H-20);ctx.stroke();const max=Math.max(0.5,...series)*1.05;ctx.strokeStyle='#51cf66';ctx.beginPath();series.forEach((v,i)=>{const x=40+(W-50)*(i/(series.length-1||1));const y=(H-20)-(H-30)*(v/max);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle='#8b949e';ctx.font='11px sans-serif';series.forEach((v,i)=>{const x=40+(W-50)*(i/(series.length-1||1));const y=(H-20)-(H-30)*(v/max);ctx.fillText(v.toFixed(2),x-10,y-6)});}
+
+function runSearch(){
+  const budget=+document.getElementById('budget').value, iters=+document.getElementById('iters').value, pop=+document.getElementById('pop').value, target=+document.getElementById('target').value, seed=+document.getElementById('seed').value;
+  const rng=mulberry32(seed); mem.length=0;
+  let gen=0, population=[], best={arch:{},ev:{accuracy:-1}}, trace=[], pending=[{op:"keep"}];
+  const node=(nm,fn)=>{setActive(nm);return fn();};
+  // planner (gen0)
+  node('planner',()=>{const seeds=Array.from({length:pop},()=>Math.floor(rng()*2**31));population=seeds.map((s,i)=>randArch(mulberry32(s),'g0_'+i))});
+  for(let g=0; g<iters; g++){
+    gen=g;
+    node('evaluator',()=>{population.forEach(a=>{const ev=evaluate(a,budget);if(ev.accuracy>best.ev.accuracy)best={arch:a,ev}})});
+    node('critic',()=>{const q=feat(best.arch);const ret=mem.slice().sort((x,y)=>cos(q,feat(x.a))-cos(q,feat(y.a))).slice(0,3).map(r=>({score:r.score,text:r.text}));const cr=critique(best.arch,best.ev,ret);pending=cr.act;mem.push({a:best.arch,text:cr.note,score:best.ev.accuracy});trace.push({gen:g,name:best.arch.name,ev:best.ev,note:cr.note})});
+    const cont=(g<iters-1)&&(best.ev.accuracy<target);
+    if(cont){node('refiner',()=>{gen++;const refined=refine(best.arch,pending,rng);refined.name='g'+gen+'_best';population=[refined];for(let i=1;i<pop;i++)population.push(randArch(rng,'g'+gen+'_'+i))});}
+    else{node('synthesizer',()=>{});break;}
+  }
+  setActive('synthesizer');
+  document.getElementById('bestGen').textContent=gen;
+  document.getElementById('bestArch').textContent=JSON.stringify(best.arch,null,2);
+  const tb=document.getElementById('trace');tb.innerHTML=trace.map(t=>`<tr><td>${t.gen}</td><td>${t.name}</td><td><span class="pill ${t.ev.accuracy>=target?'ok':'warn'}">${t.ev.accuracy.toFixed(3)}</span></td><td>${t.ev.params}</td><td style="color:var(--mut)">${t.note}</td></tr>`).join('');
+  drawChart(trace.map(t=>t.ev.accuracy));
+}
+</script>
+</body>
+</html>

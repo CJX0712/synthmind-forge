@@ -1,0 +1,19 @@
+# SynthMind-Forge — pinned top-tier OSS dependencies
+# All are OPTIONAL: the engine runs end-to-end on the Python stdlib alone.
+# Installing these upgrades the offline proxy path to real top-tier backends.
+
+# Orchestration pattern (LangGraph) — used as reference; engine has a zero-dep StateGraph impl.
+langgraph>=0.2.0
+
+# RAG memory over architecture knowledge base (Haystack)
+haystack-ai>=2.3.1
+
+# Real inference latency benchmark of candidate nets (ONNX Runtime)
+onnx>=1.17.0
+onnxruntime>=1.18.0
+
+# Architecture-latent diffusion prior (Diffusers)
+diffusers>=0.29.0
+
+# Optional: real training/eval backbone if you wire RCG-NAS to a trainer
+# torch>=2.3.0  # uncomment to enable real accuracy instead of the proxy
