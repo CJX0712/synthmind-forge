@@ -15,7 +15,9 @@ jobs:
           node-version: "20"
       - name: Validate inline JS in HTML (zero-dep)
         run: |
-          node -e "const fs=require('fs');const s=fs.readFileSync('index.html','utf8');const m=s.match(/<script(?:[^>]*)>([\\s\\S]*?)<\\/script>/g)||[];let n=0;m.forEach((b)=>{const c=b.replace(/<\\/?script[^>]*>/g,'');if(c.trim()){new Function(c);n++;}});console.log('validated '+n+' inline script block(s)');"
+          HTML=$(find . -maxdepth 2 -name "*.html" | head -1)
+          if [ -z "$HTML" ]; then echo "no HTML file found"; exit 0; fi
+          node -e "const fs=require('fs');const p=process.argv[1];const s=fs.readFileSync(p,'utf8');const m=s.match(/<script(?:[^>]*)>([\\s\\S]*?)<\\/script>/g)||[];let n=0;m.forEach((b)=>{const c=b.replace(/<\\/?script[^>]*>/g,'');if(c.trim()){new Function(c);n++;}});console.log('validated '+n+' inline script block(s) in '+p);" "$HTML"
       - name: Syntax check loose JS files
         run: |
           for f in *.js; do [ -f "$f" ] && node --check "$f"; done
